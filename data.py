@@ -64,3 +64,24 @@ def admitted_ethnicity_pct(ethnicity: str) -> float:
     if len(admitted) == 0:
         return 0.0
     return float((admitted["ethnicity"] == ethnicity).mean())
+
+
+def similar_applicants_stats(
+    sat_score: float, gpa: float, ethnicity: str, legacy: bool, athlete: bool,
+) -> tuple[int, int]:
+    pool = _get_pool()
+    mask = (
+        (pool["sat"] <= sat_score) &
+        (pool["gpa"] <= gpa) &
+        (pool["ethnicity"] == ethnicity)
+    )
+    if not legacy:
+        mask &= ~pool["legacy"]
+    if not athlete:
+        mask &= ~pool["athlete"]
+    similar = pool[mask]
+    n_admitted_similar = int(similar["admitted"].sum())
+    total_admitted = int(pool["admitted"].sum())
+    n_similar_scaled = len(similar) * 5          # scale 10K pool → ~50K real applicants
+    n_in_cohort = int(round((n_admitted_similar / total_admitted) * 2000)) if total_admitted else 0
+    return n_similar_scaled, n_in_cohort
